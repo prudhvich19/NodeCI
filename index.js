@@ -1,5 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const MongoClient = require('mongodb').MongoClient;
 const cookieSession = require('cookie-session');
 const passport = require('passport');
 const bodyParser = require('body-parser');
@@ -8,9 +9,25 @@ const keys = require('./config/keys');
 require('./models/User');
 require('./models/Blog');
 require('./services/passport');
+require('./services/cache');
 
-mongoose.Promise = global.Promise;
-mongoose.connect(keys.mongoURI, { useMongoClient: true });
+mongoose.connect(keys.mongoURI , { useNewUrlParser: true, useUnifiedTopology: true  })
+.catch( err => {
+  console.log(err.stack)
+  process.exit(1)
+});
+
+/*
+MongoClient.connect(keys.mongoURI, { useNewUrlParser: true, useUnifiedTopology: true  })
+.catch( err => {
+  console.error(err.stack)
+  process.exit(1)
+}).then( client => {
+  console.log('connected to database')
+})*/
+
+
+
 
 const app = express();
 
@@ -27,7 +44,7 @@ app.use(passport.session());
 require('./routes/authRoutes')(app);
 require('./routes/blogRoutes')(app);
 
-if (['production'].includes(process.env.NODE_ENV)) {
+if (['production', 'ci'].includes(process.env.NODE_ENV)) {
   app.use(express.static('client/build'));
 
   const path = require('path');
